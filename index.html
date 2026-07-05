@@ -140,6 +140,13 @@
   .hero-word.flip span:nth-child(2) { transform: translateX(calc((1ch + 0.04em) *  2)); }
   .hero-word.flip span:nth-child(4) { transform: translateX(calc((1ch + 0.04em) * -2)); }
   .hero-word.flip span:nth-child(5) { transform: translateX(calc((1ch + 0.04em) * -4)); }
+  /* mirrored page: counter-flip each hero glyph so the logo reads ANSEM
+     with real letters on load (and readable MESNA when hovered) */
+  body.rev .hero-word span { transform: scaleX(-1); }
+  body.rev .hero-word.flip span:nth-child(1) { transform: translateX(calc((1ch + 0.04em) *  4)) scaleX(-1); }
+  body.rev .hero-word.flip span:nth-child(2) { transform: translateX(calc((1ch + 0.04em) *  2)) scaleX(-1); }
+  body.rev .hero-word.flip span:nth-child(4) { transform: translateX(calc((1ch + 0.04em) * -2)) scaleX(-1); }
+  body.rev .hero-word.flip span:nth-child(5) { transform: translateX(calc((1ch + 0.04em) * -4)) scaleX(-1); }
   .hero-sub { margin-top: 18px; color: var(--text-dim); font-size: 15px; }
   .hero-sub b { color: var(--text); font-weight: normal; }
   .hero-eq {
