@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>$MESNA — ANSEM, reversed.</title>
+<title>$MESNA | ANSEM, reversed.</title>
 <meta name="description" content="$MESNA is ANSEM spelled backwards. Same terminal, opposite direction.">
 <style>
   :root {
@@ -366,7 +366,7 @@
     <span>M</span><span>E</span><span>S</span><span>N</span><span>A</span>
   </div>
   <div class="hero-sub">
-    <b>ANSEM</b>, spelled backwards. Hold <b>$ANSEM</b> — get airdropped <b>$MESNA</b>.<span class="cursor"></span>
+    <b>ANSEM</b>, spelled backwards. Hold <b>$ANSEM</b>, get airdropped <b>$MESNA</b>.<span class="cursor"></span>
   </div>
   <div class="hero-eq">
     <span class="k">const</span> ticker = <span class="s">"ANSEM"</span>.split(<span class="s">""</span>).<span class="f">reverse</span>().<span class="f">join</span>(<span class="s">""</span>);<br>
@@ -381,13 +381,13 @@
       <span class="sec-title">LIVE FEED</span>
     </div>
     <div class="stats-grid" id="stats-grid">
-      <div class="stat"><div class="label">Price USD</div><div class="value" id="st-price">—</div><div class="delta" id="st-delta"></div></div>
-      <div class="stat"><div class="label">Market Cap</div><div class="value" id="st-mcap">—</div></div>
-      <div class="stat"><div class="label">Liquidity</div><div class="value" id="st-liq">—</div></div>
-      <div class="stat"><div class="label">24h Volume</div><div class="value" id="st-vol">—</div></div>
+      <div class="stat"><div class="label">Price USD</div><div class="value" id="st-price">...</div><div class="delta" id="st-delta"></div></div>
+      <div class="stat"><div class="label">Market Cap</div><div class="value" id="st-mcap">...</div></div>
+      <div class="stat"><div class="label">Liquidity</div><div class="value" id="st-liq">...</div></div>
+      <div class="stat"><div class="label">24h Volume</div><div class="value" id="st-vol">...</div></div>
     </div>
     <div class="feed" id="feed-box"></div>
-    <div class="feed-note" id="feed-note"><span class="live-dot"></span>awaiting contract address — feed running in simulation mode. real trades stream in automatically once CA is set.</div>
+    <div class="feed-note" id="feed-note"><span class="live-dot"></span>awaiting contract address: feed running in simulation mode. real trades stream in automatically once CA is set.</div>
   </div>
 </section>
 
@@ -399,8 +399,8 @@
     </div>
     <p class="txt">Every cycle, the timeline finds a name and runs it forward. <span class="hl">$ANSEM</span> ran forward. Coins were minted in his honor, airdrops rained on his holders, charts went up and to the right.</p>
     <p class="txt">We looked at all of that and asked one question: <span class="hl">what if you played the tape in reverse?</span></p>
-    <p class="txt"><span class="hl">$MESNA</span> is the mirror image. The reflection in the terminal glass. Not a fork, not a tribute — a <span class="hl">reversal</span>. Every fee $MESNA earns gets claimed, recycled into buybacks, and airdropped straight back to the wallets that started it all: <span class="hl">$ANSEM holders</span>. Same five letters. Read from the other side.</p>
-    <p class="txt dim"><span class="dim">No presale. No team allocation. No claim site. No roadmap — roadmaps only go forward, and we don't do forward.</span></p>
+    <p class="txt"><span class="hl">$MESNA</span> is the mirror image. The reflection in the terminal glass. Not a fork, not a tribute. A <span class="hl">reversal</span>. Every fee $MESNA earns gets claimed, recycled into buybacks, and airdropped straight back to the wallets that started it all: <span class="hl">$ANSEM holders</span>. Same five letters. Read from the other side.</p>
+    <p class="txt dim"><span class="dim">No presale. No team allocation. No claim site. No roadmap. Roadmaps only go forward, and we don't do forward.</span></p>
   </div>
 </section>
 
@@ -423,7 +423,7 @@
         <div class="step-num">3</div>
         <div class="step-body">
           <b>airdrop to $ANSEM holders</b>
-          <span class="dim">bought-back $MESNA flows straight to $ANSEM holders' wallets. weighted by √balance — whales don't eat the table.</span>
+          <span class="dim">bought-back $MESNA flows straight to $ANSEM holders' wallets. weighted by √balance, so whales don't eat the table.</span>
         </div>
       </div>
       <div class="step">
@@ -442,8 +442,8 @@
       </div>
     </div>
     <p class="txt" style="margin-top:20px">The distribution logic, in one honest snippet:</p>
-    <pre class="code"><span class="c">// snapshot $ANSEM holders — they get paid in $MESNA</span>
-<span class="c">// weight = sqrt(balance) — sybil-resistant, whale-dampened</span>
+    <pre class="code"><span class="c">// snapshot $ANSEM holders: they get paid in $MESNA</span>
+<span class="c">// weight = sqrt(balance): sybil-resistant, whale-dampened</span>
 <span class="k">const</span> holders = <span class="k">await</span> <span class="f">getHolders</span>(ANSEM_MINT);
 <span class="k">const</span> eligible = holders.<span class="f">filter</span>(h =&gt; h.balance &gt;= MIN_ANSEM_BALANCE);
 <span class="k">const</span> totalW  = eligible.<span class="f">reduce</span>((s, h) =&gt; s + Math.<span class="f">sqrt</span>(h.balance), 0);
@@ -461,11 +461,11 @@
       <span class="sec-title">HOUSE RULES</span>
     </div>
     <ul class="rules">
-      <li>Hold $ANSEM to be eligible. <span class="dim">you don't even need to hold $MESNA — the mirror pays the original.</span></li>
+      <li>Hold $ANSEM to be eligible. <span class="dim">you don't even need to hold $MESNA. the mirror pays the original.</span></li>
       <li>Minimum $ANSEM balance required. <span class="dim">dust wallets read about it on the timeline.</span></li>
       <li>Distribution is √-weighted by $ANSEM balance. <span class="dim">holding 100x more ≠ earning 100x more.</span></li>
       <li>Top wallets excluded from drops. <span class="dim">the mirror does not reward giants.</span></li>
-      <li>Everything happens on-chain. <span class="dim">don't trust — verify. then verify again, backwards.</span></li>
+      <li>Everything happens on-chain. <span class="dim">don't trust, verify. then verify again, backwards.</span></li>
       <li>No promises about the future. <span class="dim">we only look backwards. it's in the name.</span></li>
     </ul>
   </div>
@@ -479,7 +479,7 @@
     </div>
     <div class="ca-box">
       <span class="ca-label">CA:</span>
-      <span class="ca-value" id="ca-value">TBA — contract address drops soon</span>
+      <span class="ca-value" id="ca-value">TBA: contract address drops soon</span>
       <button class="copy-btn" id="copy-btn">[ copy ]</button>
     </div>
     <div class="links-grid" id="links-grid">
@@ -497,13 +497,13 @@
       <span class="sec-num">06</span>
       <span class="sec-title">DISCLAIMER</span>
     </div>
-    <p class="txt dim"><span class="dim">$MESNA is a memecoin with no intrinsic value and no expectation of financial return. It is not affiliated with, endorsed by, or connected to Ansem or any other person. It exists for entertainment purposes only. Never invest more than you can afford to lose — especially in something whose entire thesis is "backwards".</span></p>
+    <p class="txt dim"><span class="dim">$MESNA is a memecoin with no intrinsic value and no expectation of financial return. It is not affiliated with, endorsed by, or connected to Ansem or any other person. It exists for entertainment purposes only. Never invest more than you can afford to lose, especially in something whose entire thesis is "backwards".</span></p>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <span class="flip">© 2026 $MESNA — read it again, slowly.</span>
+    <span class="flip">© 2026 $MESNA. read it again, slowly.</span>
   </div>
 </footer>
 
@@ -553,7 +553,7 @@ $("copy-btn").addEventListener("click", async () => {
 
 /* ----- number formatting ----- */
 function fmtUsd(n) {
-  if (n == null || isNaN(n)) return "—";
+  if (n == null || isNaN(n)) return "...";
   if (n >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
   if (n >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M";
   if (n >= 1e3) return "$" + (n / 1e3).toFixed(1) + "K";
@@ -580,7 +580,7 @@ function ts(d) {
 /* ----- simulation mode (until CA is set) ----- */
 let simTimer = null;
 function startSimulation() {
-  pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 — SIMULATION MODE</span>`);
+  pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 :: SIMULATION MODE</span>`);
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">waiting for mint address... replaying imaginary tape in reverse</span>`);
   const wallets = ["7xKX...m2Vp", "3nFa...9dQz", "Bk2e...xR4t", "9mWq...L7cs", "Fh5u...pT2n", "2vGy...kM8b", "6sDr...wN3j"];
   const tick = () => {
@@ -645,16 +645,16 @@ async function fetchTrades() {
 }
 
 async function startLive(ca) {
-  pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 — LIVE MODE</span>`);
+  pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 :: LIVE MODE</span>`);
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">mint: ${ca}</span>`);
-  $("feed-note").innerHTML = '<span class="live-dot"></span>live trades via GeckoTerminal — stats via DexScreener. everything verifiable on-chain.';
+  $("feed-note").innerHTML = '<span class="live-dot"></span>live trades via GeckoTerminal, stats via DexScreener. everything verifiable on-chain.';
   const loop = async () => {
     try {
       const ok = await fetchStats(ca);
       if (ok) await fetchTrades();
-      else pushLine(`<span class="ts">${ts()}</span> <span class="sys">no pool found yet — retrying...</span>`);
+      else pushLine(`<span class="ts">${ts()}</span> <span class="sys">no pool found yet, retrying...</span>`);
     } catch (e) {
-      pushLine(`<span class="ts">${ts()}</span> <span class="sys">feed error: ${e.message} — retrying...</span>`);
+      pushLine(`<span class="ts">${ts()}</span> <span class="sys">feed error: ${e.message}, retrying...</span>`);
     }
     setTimeout(loop, CONFIG.POLL_MS);
   };
