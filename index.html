@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$MESNA — ANSEM, reversed.</title>
+<meta name="description" content="$MESNA is ANSEM spelled backwards. Same terminal, opposite direction.">
+<style>
+  :root {
+    --bg: #080a08;
+    --bg-panel: #0d120d;
+    --accent: #33ff33;
+    --accent-dim: #1fae1f;
+    --accent-glow: rgba(51, 255, 51, 0.14);
+    --text: #cfe8cf;
+    --text-dim: #6f8a6f;
+    --red: #ff4d2e;
+    --green: #7dff6a;
+    --border: #1e2a1e;
+    --mono: "Cascadia Code", "JetBrains Mono", "Fira Code", Consolas, "Courier New", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+  /* CRT scanline overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.13) 0px,
+      rgba(0,0,0,0.13) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 998;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.5) 100%);
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- marquee ---------- */
+  .marquee {
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-panel);
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 6px 0;
+  }
+  .marquee-inner {
+    display: inline-block;
+    animation: scroll-rev 30s linear infinite;
+  }
+  @keyframes scroll-rev {
+    from { transform: translateX(-50%); }
+    to   { transform: translateX(0); }
+  }
+  .marquee b { color: var(--accent); font-weight: normal; }
+
+  /* ---------- nav ---------- */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,8,0.92);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    color: var(--accent);
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+  .logo .flip { display: inline-block; transform: scaleX(-1); }
+  nav a.tab { color: var(--text-dim); font-size: 13px; }
+  nav a.tab:hover { color: var(--accent); text-decoration: none; }
+  nav a.tab::before { content: "./"; opacity: 0.5; }
+  .buy-btn {
+    margin-left: auto;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 4px 14px;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .buy-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    text-decoration: none;
+    box-shadow: 0 0 18px var(--accent-glow), 0 0 36px var(--accent-glow);
+  }
+
+  /* ---------- hero ---------- */
+  header { padding: 84px 0 60px; text-align: center; position: relative; }
+  .hero-word {
+    font-size: clamp(52px, 12vw, 128px);
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    text-shadow: 0 0 24px var(--accent-glow), 0 0 80px var(--accent-glow);
+    line-height: 1;
+    user-select: none;
+    cursor: default;
+  }
+  .hero-word span {
+    display: inline-block;
+    transition: transform 0.35s cubic-bezier(.6,-0.4,.3,1.4);
+  }
+  .hero-word:hover span { transform: scaleX(-1); }
+  .hero-sub { margin-top: 18px; color: var(--text-dim); font-size: 15px; }
+  .hero-sub b { color: var(--text); font-weight: normal; }
+  .hero-eq {
+    margin-top: 26px;
+    display: inline-block;
+    border: 1px dashed var(--border);
+    padding: 10px 18px;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-align: left;
+  }
+  .hero-eq .k { color: var(--red); }
+  .hero-eq .s { color: var(--green); }
+  .hero-eq .f { color: var(--accent); }
+  .cursor {
+    display: inline-block;
+    width: 9px; height: 18px;
+    background: var(--accent);
+    vertical-align: text-bottom;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- sections ---------- */
+  section { padding: 44px 0; border-top: 1px solid var(--border); }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .sec-num { color: var(--text-dim); font-size: 13px; }
+  .sec-title { color: var(--accent); font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+  .sec-title::after { content: "_"; animation: blink 1s steps(1) infinite; }
+  p.txt { color: var(--text); margin-bottom: 14px; max-width: 68ch; }
+  p.txt .dim { color: var(--text-dim); }
+  p.txt .hl { color: var(--accent); }
+
+  /* ---------- stats ---------- */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    padding: 14px 16px;
+  }
+  .stat .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .stat .value { font-size: 22px; color: var(--accent); margin-top: 4px; word-break: break-all; }
+  .stat .delta { font-size: 12px; margin-top: 2px; }
+  .delta.up { color: var(--green); }
+  .delta.down { color: var(--red); }
+
+  /* ---------- feed ---------- */
+  .feed {
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    height: 320px;
+    overflow-y: auto;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  .feed::-webkit-scrollbar { width: 8px; }
+  .feed::-webkit-scrollbar-track { background: var(--bg); }
+  .feed::-webkit-scrollbar-thumb { background: var(--border); }
+  .feed-line { margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .feed-line .ts { color: var(--text-dim); }
+  .feed-line .buy { color: var(--green); }
+  .feed-line .sell { color: var(--red); }
+  .feed-line .sys { color: var(--accent-dim); }
+  .feed-note { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+  .live-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    margin-right: 6px;
+    animation: blink 1.4s steps(1) infinite;
+  }
+
+  /* ---------- how / steps ---------- */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    color: var(--bg);
+    background: var(--accent);
+    min-width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold;
+    font-size: 13px;
+  }
+  .step-body b { color: var(--accent); font-weight: normal; }
+  .step-body .dim { color: var(--text-dim); font-size: 13px; display: block; margin-top: 2px; }
+
+  /* ---------- rules ---------- */
+  .rules { list-style: none; }
+  .rules li {
+    padding: 10px 0 10px 28px;
+    position: relative;
+    border-bottom: 1px dashed var(--border);
+    color: var(--text);
+  }
+  .rules li:last-child { border-bottom: none; }
+  .rules li::before {
+    content: "◀";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: 12px;
+    top: 14px;
+  }
+  .rules li .dim { color: var(--text-dim); }
+
+  /* ---------- token / CA ---------- */
+  .ca-box {
+    border: 1px solid var(--accent-dim);
+    background: var(--bg-panel);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .ca-box .ca-label { color: var(--text-dim); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .ca-box .ca-value {
+    color: var(--accent);
+    word-break: break-all;
+    flex: 1;
+    min-width: 200px;
+    font-size: 14px;
+  }
+  .copy-btn {
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .link-card {
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    padding: 14px 16px;
+    text-align: center;
+    color: var(--text);
+    transition: all 0.15s;
+    display: block;
+  }
+  .link-card:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    text-decoration: none;
+    box-shadow: 0 0 18px var(--accent-glow);
+  }
+  .link-card .arrow { color: var(--text-dim); font-size: 12px; display: block; margin-top: 2px; }
+
+  /* ---------- code block ---------- */
+  pre.code {
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+  pre.code .c { color: var(--text-dim); }
+  pre.code .k { color: var(--red); }
+  pre.code .s { color: var(--green); }
+  pre.code .f { color: var(--accent); }
+
+  /* ---------- footer ---------- */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0 48px;
+    color: var(--text-dim);
+    font-size: 12px;
+    text-align: center;
+  }
+  footer .flip { display: inline-block; transform: scaleX(-1); }
+
+  @media (max-width: 600px) {
+    nav .wrap { gap: 14px; }
+    .buy-btn { margin-left: 0; }
+    header { padding: 56px 0 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="marquee">
+  <div class="marquee-inner" id="marquee-text"></div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <span class="logo">$MESNA<span class="flip">▶</span></span>
+    <a class="tab" href="#feed">feed</a>
+    <a class="tab" href="#origin">origin</a>
+    <a class="tab" href="#how">how</a>
+    <a class="tab" href="#rules">rules</a>
+    <a class="tab" href="#token">token</a>
+    <a class="buy-btn" id="buy-link" href="#token">[ BUY $MESNA ]</a>
+  </div>
+</nav>
+
+<header class="wrap">
+  <div class="hero-word" title="hover me">
+    <span>M</span><span>E</span><span>S</span><span>N</span><span>A</span>
+  </div>
+  <div class="hero-sub">
+    <b>ANSEM</b>, spelled backwards. Same terminal. Opposite direction.<span class="cursor"></span>
+  </div>
+  <div class="hero-eq">
+    <span class="k">const</span> ticker = <span class="s">"ANSEM"</span>.split(<span class="s">""</span>).<span class="f">reverse</span>().<span class="f">join</span>(<span class="s">""</span>);<br>
+    <span class="k">console</span>.log(ticker); <span style="color:var(--text-dim)">// "MESNA"</span>
+  </div>
+</header>
+
+<section id="feed">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <span class="sec-title">LIVE FEED</span>
+    </div>
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat"><div class="label">Price USD</div><div class="value" id="st-price">—</div><div class="delta" id="st-delta"></div></div>
+      <div class="stat"><div class="label">Market Cap</div><div class="value" id="st-mcap">—</div></div>
+      <div class="stat"><div class="label">Liquidity</div><div class="value" id="st-liq">—</div></div>
+      <div class="stat"><div class="label">24h Volume</div><div class="value" id="st-vol">—</div></div>
+    </div>
+    <div class="feed" id="feed-box"></div>
+    <div class="feed-note" id="feed-note"><span class="live-dot"></span>awaiting contract address — feed running in simulation mode. real trades stream in automatically once CA is set.</div>
+  </div>
+</section>
+
+<section id="origin">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <span class="sec-title">ORIGIN</span>
+    </div>
+    <p class="txt">Every cycle, the timeline finds a name and runs it forward. <span class="hl">$ANSEM</span> ran forward. Coins were minted in his honor, airdrops rained on his holders, charts went up and to the right.</p>
+    <p class="txt">We looked at all of that and asked one question: <span class="hl">what if you played the tape in reverse?</span></p>
+    <p class="txt"><span class="hl">$MESNA</span> is the mirror image. The reflection in the terminal glass. Not a fork, not a tribute — a <span class="hl">reversal</span>. Where they zig forward, we zag backward. Same five letters. Read from the other side.</p>
+    <p class="txt dim"><span class="dim">No presale. No team allocation. No claim site. No roadmap — roadmaps only go forward, and we don't do forward.</span></p>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <span class="sec-title">HOW IT WORKS</span>
+    </div>
+    <p class="txt">The cycle, run in reverse order. Read bottom-up if you want it to make sense forward:</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <b>repeat</b>
+          <span class="dim">the loop never ends. it just runs the other way.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <b>reward the mirror side</b>
+          <span class="dim">bought-back $MESNA flows to diamond-handed holders. weighted by √balance — whales don't eat the table.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <b>buy back $MESNA</b>
+          <span class="dim">collected fees are converted into $MESNA on the open market. green candles, printed in reverse.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <b>claim creator fees</b>
+          <span class="dim">trading fees accumulate on-chain. everything is verifiable on Solscan.</span>
+        </div>
+      </div>
+    </div>
+    <p class="txt" style="margin-top:20px">The distribution logic, in one honest snippet:</p>
+    <pre class="code"><span class="c">// weight = sqrt(balance) — sybil-resistant, whale-dampened</span>
+<span class="k">const</span> holders = <span class="k">await</span> <span class="f">getHolders</span>(MESNA_MINT);
+<span class="k">const</span> eligible = holders.<span class="f">filter</span>(h =&gt; h.balance &gt;= MIN_BALANCE);
+<span class="k">const</span> totalW  = eligible.<span class="f">reduce</span>((s, h) =&gt; s + Math.<span class="f">sqrt</span>(h.balance), 0);
+<span class="k">for</span> (<span class="k">const</span> h <span class="k">of</span> eligible.<span class="f">reverse</span>()) {  <span class="c">// of course we iterate backwards</span>
+  <span class="k">const</span> share = pool * Math.<span class="f">sqrt</span>(h.balance) / totalW;
+  <span class="k">await</span> <span class="f">send</span>(h.owner, share);
+}</pre>
+  </div>
+</section>
+
+<section id="rules">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <span class="sec-title">HOUSE RULES</span>
+    </div>
+    <ul class="rules">
+      <li>Minimum balance required to be eligible. <span class="dim">dust wallets read about it on the timeline.</span></li>
+      <li>Distribution is √-weighted. <span class="dim">holding 100x more ≠ earning 100x more.</span></li>
+      <li>Top wallets excluded from drops. <span class="dim">the mirror does not reward giants.</span></li>
+      <li>Everything happens on-chain. <span class="dim">don't trust — verify. then verify again, backwards.</span></li>
+      <li>No promises about the future. <span class="dim">we only look backwards. it's in the name.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="token">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <span class="sec-title">TOKEN</span>
+    </div>
+    <div class="ca-box">
+      <span class="ca-label">CA:</span>
+      <span class="ca-value" id="ca-value">TBA — contract address drops soon</span>
+      <button class="copy-btn" id="copy-btn">[ copy ]</button>
+    </div>
+    <div class="links-grid" id="links-grid">
+      <a class="link-card" id="lk-pump" href="https://pump.fun" target="_blank" rel="noopener">pump.fun<span class="arrow">◀ buy</span></a>
+      <a class="link-card" id="lk-dex" href="https://dexscreener.com" target="_blank" rel="noopener">dexscreener<span class="arrow">◀ chart</span></a>
+      <a class="link-card" id="lk-scan" href="https://solscan.io" target="_blank" rel="noopener">solscan<span class="arrow">◀ verify</span></a>
+      <a class="link-card" id="lk-x" href="https://x.com" target="_blank" rel="noopener">x / twitter<span class="arrow">◀ community</span></a>
+    </div>
+  </div>
+</section>
+
+<section id="disclaimer">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">06</span>
+      <span class="sec-title">DISCLAIMER</span>
+    </div>
+    <p class="txt dim"><span class="dim">$MESNA is a memecoin with no intrinsic value and no expectation of financial return. It is not affiliated with, endorsed by, or connected to Ansem or any other person. It exists for entertainment purposes only. Never invest more than you can afford to lose — especially in something whose entire thesis is "backwards".</span></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="flip">© 2026 $MESNA — read it again, slowly.</span>
+  </div>
+</footer>
+
+<script>
+/* ================= CONFIG =================
+   Paste the token mint address below once launched.
+   Everything else (links, stats, live trades) wires
+   itself up automatically. */
+const CONFIG = {
+  CONTRACT_ADDRESS: "",          // <-- paste MESNA mint address here
+  X_URL: "",                     // <-- paste X/Twitter community URL here (optional)
+  POLL_MS: 15000
+};
+/* ========================================== */
+
+const $ = (id) => document.getElementById(id);
+
+/* ----- marquee ----- */
+(() => {
+  const chunk = ' MESNA ◀ ANSEM in reverse ◀ same letters, other direction ◀ no roadmap, only rearview ◀ <b>$MESNA</b> ◀';
+  $("marquee-text").innerHTML = chunk.repeat(10);
+})();
+
+/* ----- wire links + CA if configured ----- */
+(() => {
+  const ca = CONFIG.CONTRACT_ADDRESS.trim();
+  if (ca) {
+    $("ca-value").textContent = ca;
+    $("lk-pump").href = "https://pump.fun/coin/" + ca;
+    $("lk-dex").href = "https://dexscreener.com/solana/" + ca;
+    $("lk-scan").href = "https://solscan.io/token/" + ca;
+    $("buy-link").href = "https://pump.fun/coin/" + ca;
+  }
+  if (CONFIG.X_URL.trim()) $("lk-x").href = CONFIG.X_URL.trim();
+})();
+
+$("copy-btn").addEventListener("click", async () => {
+  const ca = CONFIG.CONTRACT_ADDRESS.trim();
+  const btn = $("copy-btn");
+  if (!ca) { btn.textContent = "[ no CA yet ]"; setTimeout(() => btn.textContent = "[ copy ]", 1500); return; }
+  try {
+    await navigator.clipboard.writeText(ca);
+    btn.textContent = "[ copied ]";
+  } catch { btn.textContent = "[ select manually ]"; }
+  setTimeout(() => btn.textContent = "[ copy ]", 1500);
+});
+
+/* ----- number formatting ----- */
+function fmtUsd(n) {
+  if (n == null || isNaN(n)) return "—";
+  if (n >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
+  if (n >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M";
+  if (n >= 1e3) return "$" + (n / 1e3).toFixed(1) + "K";
+  if (n >= 1)   return "$" + n.toFixed(2);
+  return "$" + n.toPrecision(3);
+}
+
+/* ----- feed rendering ----- */
+const feedBox = $("feed-box");
+function pushLine(html) {
+  const div = document.createElement("div");
+  div.className = "feed-line";
+  div.innerHTML = html;
+  feedBox.appendChild(div);
+  while (feedBox.children.length > 120) feedBox.removeChild(feedBox.firstChild);
+  feedBox.scrollTop = feedBox.scrollHeight;
+}
+function ts(d) {
+  const p = (x) => String(x).padStart(2, "0");
+  d = d || new Date();
+  return `[${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}]`;
+}
+
+/* ----- simulation mode (until CA is set) ----- */
+let simTimer = null;
+function startSimulation() {
+  pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 — SIMULATION MODE</span>`);
+  pushLine(`<span class="ts">${ts()}</span> <span class="sys">waiting for mint address... replaying imaginary tape in reverse</span>`);
+  const wallets = ["7xKX...m2Vp", "3nFa...9dQz", "Bk2e...xR4t", "9mWq...L7cs", "Fh5u...pT2n", "2vGy...kM8b", "6sDr...wN3j"];
+  const tick = () => {
+    const buy = Math.random() < 0.72;
+    const w = wallets[Math.floor(Math.random() * wallets.length)];
+    const sol = (Math.random() * 4 + 0.05).toFixed(2);
+    if (buy) pushLine(`<span class="ts">${ts()}</span> <span class="buy">BUY </span> ${w} <span class="buy">+${sol} SOL</span> <span class="sys">// simulated</span>`);
+    else     pushLine(`<span class="ts">${ts()}</span> <span class="sell">SELL</span> ${w} <span class="sell">-${sol} SOL</span> <span class="sys">// simulated</span>`);
+    simTimer = setTimeout(tick, 1200 + Math.random() * 3500);
+  };
+  tick();
+}
+
+/* ----- live mode (DexScreener stats + GeckoTerminal trades) ----- */
+let poolAddress = null;
+let seenTrades = new Set();
+
+async function fetchStats(ca) {
+  const res = await fetch("https://api.dexscreener.com/latest/dex/tokens/" + ca);
+  const data = await res.json();
+  const pairs = (data.pairs || []).filter(p => p.chainId === "solana");
+  if (!pairs.length) return false;
+  pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+  const p = pairs[0];
+  poolAddress = p.pairAddress;
+  $("st-price").textContent = fmtUsd(parseFloat(p.priceUsd));
+  $("st-mcap").textContent = fmtUsd(p.marketCap || p.fdv);
+  $("st-liq").textContent = fmtUsd(p.liquidity?.usd);
+  $("st-vol").textContent = fmtUsd(p.volume?.h24);
+  const ch = p.priceChange?.h24;
+  if (ch != null) {
+    const el = $("st-delta");
+    el.textContent = (ch >= 0 ? "▲ +" : "▼ ") + ch + "% 24h";
+    el.className = "delta " + (ch >= 0 ? "up" : "down");
+  }
+  return true;
+}
+
+async function fetchTrades() {
+  if (!poolAddress) return;
+  const res = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${poolAddress}/trades`);
+  const data = await res.json();
+  const trades = (data.data || []).slice(0, 15).reverse();
+  for (const t of trades) {
+    if (seenTrades.has(t.id)) continue;
+    seenTrades.add(t.id);
+    const a = t.attributes;
+    const buy = a.kind === "buy";
+    const usd = fmtUsd(parseFloat(a.volume_in_usd));
+    const wallet = a.tx_from_address ? a.tx_from_address.slice(0, 4) + "..." + a.tx_from_address.slice(-4) : "????";
+    const when = new Date(a.block_timestamp);
+    const link = `https://solscan.io/tx/${a.tx_hash}`;
+    pushLine(
+      `<span class="ts">${ts(when)}</span> ` +
+      (buy ? `<span class="buy">BUY </span>` : `<span class="sell">SELL</span>`) +
+      ` ${wallet} ` +
+      (buy ? `<span class="buy">${usd}</span>` : `<span class="sell">${usd}</span>`) +
+      ` <a href="${link}" target="_blank" rel="noopener">[tx]</a>`
+    );
+  }
+  if (seenTrades.size > 400) seenTrades = new Set([...seenTrades].slice(-200));
+}
+
+async function startLive(ca) {
+  pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 — LIVE MODE</span>`);
+  pushLine(`<span class="ts">${ts()}</span> <span class="sys">mint: ${ca}</span>`);
+  $("feed-note").innerHTML = '<span class="live-dot"></span>live trades via GeckoTerminal — stats via DexScreener. everything verifiable on-chain.';
+  const loop = async () => {
+    try {
+      const ok = await fetchStats(ca);
+      if (ok) await fetchTrades();
+      else pushLine(`<span class="ts">${ts()}</span> <span class="sys">no pool found yet — retrying...</span>`);
+    } catch (e) {
+      pushLine(`<span class="ts">${ts()}</span> <span class="sys">feed error: ${e.message} — retrying...</span>`);
+    }
+    setTimeout(loop, CONFIG.POLL_MS);
+  };
+  loop();
+}
+
+/* ----- boot ----- */
+(() => {
+  const ca = CONFIG.CONTRACT_ADDRESS.trim();
+  if (ca) startLive(ca);
+  else startSimulation();
+})();
+</script>
+</body>
+</html>
