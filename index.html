@@ -133,9 +133,13 @@
   }
   .hero-word span {
     display: inline-block;
-    transition: transform 0.35s cubic-bezier(.6,-0.4,.3,1.4);
+    transition: transform 0.45s cubic-bezier(.6,-0.4,.3,1.4);
   }
-  .hero-word:hover span { transform: scaleX(-1); }
+  /* letters swap places so MESNA really reads ANSEM (monospace: 1ch + letter-spacing per slot) */
+  .hero-word.flip span:nth-child(1) { transform: translateX(calc((1ch + 0.04em) *  4)); }
+  .hero-word.flip span:nth-child(2) { transform: translateX(calc((1ch + 0.04em) *  2)); }
+  .hero-word.flip span:nth-child(4) { transform: translateX(calc((1ch + 0.04em) * -2)); }
+  .hero-word.flip span:nth-child(5) { transform: translateX(calc((1ch + 0.04em) * -4)); }
   .hero-sub { margin-top: 18px; color: var(--text-dim); font-size: 15px; }
   .hero-sub b { color: var(--text); font-weight: normal; }
   .hero-eq {
@@ -576,6 +580,13 @@ const $ = (id) => document.getElementById(id);
     $("buy-link").href = "https://pump.fun/coin/" + ca;
   }
   if (CONFIG.X_URL.trim()) $("lk-x").href = CONFIG.X_URL.trim();
+})();
+
+/* ----- hero: letters swap into ANSEM on hover/tap ----- */
+(() => {
+  const hero = document.querySelector(".hero-word");
+  hero.addEventListener("pointerenter", () => hero.classList.add("flip"));
+  hero.addEventListener("pointerleave", () => hero.classList.remove("flip"));
 })();
 
 /* ----- mirror mode toggle ----- */
