@@ -54,16 +54,25 @@ module.exports = async (req, res) => {
     const sigs = ((await rpc("getSignaturesForAddress", [WALLET, { limit: 50 }])) || [])
       .filter(s => !s.err);
     const events = [];
-    const CHUNK = 8;
+    let failed = 0;
+    const CHUNK = process.env.HELIUS_API_KEY ? 8 : 3;
     for (let i = 0; i < sigs.length; i += CHUNK) {
       const chunk = sigs.slice(i, i + CHUNK);
       const txs = await Promise.all(chunk.map(s =>
-        rpc("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]).catch(() => null)
+        rpc("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }])
+          .catch(() => { failed++; return null; })
       ));
       txs.forEach((tx, j) => {
         const d = parseTx(tx);
         if (d) events.push({ ...d, sig: chunk[j].signature, t: chunk[j].blockTime || null });
       });
+    }
+    // if the RPC dropped most lookups (rate-limited public endpoint), tell the
+    // browser to fall back to its own walk instead of caching a hollow feed
+    if (failed > sigs.length / 2) {
+      res.setHeader("Cache-Control", "no-store");
+      res.status(503).json({ error: "rpc degraded", failed, total: sigs.length });
+      return;
     }
     // newest first, capped
     res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=120");
