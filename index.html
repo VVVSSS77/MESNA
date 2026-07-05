@@ -831,56 +831,81 @@ async function rpc(method, params) {
   return (await res.json()).result;
 }
 
-function parseAirdrop(tx) {
-  // count only outgoing MESNA: transferChecked of the MESNA mint signed by the
-  // distributor wallet. Anything else in the tx (buyback swap legs, wSOL moves)
-  // must not show up as an airdrop.
-  if (!tx || !tx.meta) return null;
+function walletSolDelta(tx, wallet) {
+  const keys = tx.transaction.message.accountKeys || [];
+  const i = keys.findIndex(k => (k.pubkey || k) === wallet);
+  if (i < 0 || !tx.meta.preBalances) return 0;
+  return (tx.meta.postBalances[i] - tx.meta.preBalances[i]) / 1e9;
+}
+
+function parseDistributorTx(tx) {
+  // classify a distributor-wallet tx:
+  //  - MESNA out, signed by the wallet          -> AIRDROP (recipients + total)
+  //  - MESNA in from someone else (swap leg)    -> BUYBACK (total + SOL spent)
+  //  - no MESNA moved but SOL balance went up   -> FEE CLAIM
+  if (!tx || !tx.meta || tx.meta.err) return null;
+  const CA = CONFIG.CONTRACT_ADDRESS.trim();
+  const W = CONFIG.AIRDROP_WALLET.trim();
   const instrs = [];
   for (const ix of tx.transaction.message.instructions || []) instrs.push(ix);
   for (const inner of tx.meta.innerInstructions || []) instrs.push(...inner.instructions);
-  let total = 0, recipients = 0;
+  let out = 0, outCount = 0, bought = 0;
   for (const ix of instrs) {
     const p = ix.parsed;
-    if (!p || p.type !== "transferChecked") continue;
-    if (p.info.mint !== CONFIG.CONTRACT_ADDRESS.trim()) continue;
-    if (p.info.authority !== CONFIG.AIRDROP_WALLET.trim()) continue;
+    if (!p || p.type !== "transferChecked" || !p.info || p.info.mint !== CA) continue;
     const amt = p.info.tokenAmount ? p.info.tokenAmount.uiAmount : 0;
-    if (amt > 0) { total += amt; recipients++; }
+    if (!amt) continue;
+    if (p.info.authority === W) { out += amt; outCount++; }
+    else bought += amt;
   }
-  if (!recipients) return null;
-  return { total, recipients };
+  const solDelta = walletSolDelta(tx, W);
+  if (outCount) return { type: "airdrop", total: out, recipients: outCount };
+  if (bought > 0) return { type: "buyback", total: bought, sol: Math.max(0, -solDelta) };
+  if (solDelta > 0.0005) return { type: "claim", sol: solDelta };
+  return null;
+}
+
+function renderDistributorEvent(d, when, link) {
+  const a = (txt) => `<a href="${link}" target="_blank" rel="noopener">[tx]</a>`;
+  if (d.type === "airdrop") {
+    pushLine(
+      `<span class="ts">${ts(when)}</span> <span class="drop">AIRDROP</span> ` +
+      `${d.recipients} wallet${d.recipients > 1 ? "s" : ""} ($ANSEM holders) ` +
+      `<span class="drop">+${Math.round(d.total).toLocaleString("en-US")} MESNA</span> ${a()}`
+    );
+  } else if (d.type === "buyback") {
+    const spent = d.sol > 0.0001 ? ` (-${d.sol.toFixed(3)} SOL)` : "";
+    pushLine(
+      `<span class="ts">${ts(when)}</span> <span class="drop">BUYBACK</span> bought ` +
+      `<span class="drop">+${Math.round(d.total).toLocaleString("en-US")} MESNA</span>${spent} ${a()}`
+    );
+  } else if (d.type === "claim") {
+    pushLine(
+      `<span class="ts">${ts(when)}</span> <span class="sys">FEE CLAIM</span> ` +
+      `<span class="buy">+${d.sol.toFixed(4)} SOL</span> ${a()}`
+    );
+  }
 }
 
 async function fetchAirdrops() {
   const wallet = CONFIG.AIRDROP_WALLET.trim();
   if (!wallet) return;
-  const sigs = await rpc("getSignaturesForAddress", [wallet, { limit: 8 }]) || [];
+  const sigs = await rpc("getSignaturesForAddress", [wallet, { limit: 15 }]) || [];
   const fresh = sigs.filter(s => !seenSigs.has(s.signature) && !s.err);
-  // on first poll just mark history as seen so we only stream new drops
-  if (firstAirdropPoll) {
+  if (firstAirdropPoll && sigs.length) {
     firstAirdropPoll = false;
-    sigs.forEach(s => seenSigs.add(s.signature));
-    if (sigs.length) pushLine(`<span class="ts">${ts()}</span> <span class="sys">airdrop watcher armed on ${wallet.slice(0, 4)}...${wallet.slice(-4)}</span>`);
-    return;
+    pushLine(`<span class="ts">${ts()}</span> <span class="sys">watcher armed on ${wallet.slice(0, 4)}...${wallet.slice(-4)} :: replaying recent activity</span>`);
   }
-  for (const s of fresh.reverse().slice(0, 4)) {
+  // newest-first from RPC; show up to 8 per poll, oldest first
+  for (const s of fresh.slice(0, 8).reverse()) {
     seenSigs.add(s.signature);
     const tx = await rpc("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
-    const drop = parseAirdrop(tx);
+    const d = parseDistributorTx(tx);
+    if (!d) continue;
     const when = s.blockTime ? new Date(s.blockTime * 1000) : new Date();
-    const link = `https://solscan.io/tx/${s.signature}`;
-    if (drop) {
-      pushLine(
-        `<span class="ts">${ts(when)}</span> <span class="drop">AIRDROP</span> ` +
-        `${drop.recipients} wallet${drop.recipients > 1 ? "s" : ""} ` +
-        `<span class="drop">+${Math.round(drop.total).toLocaleString("en-US")} MESNA</span> ` +
-        `<a href="${link}" target="_blank" rel="noopener">[tx]</a>`
-      );
-    } else {
-      pushLine(`<span class="ts">${ts(when)}</span> <span class="sys">distributor tx</span> <a href="${link}" target="_blank" rel="noopener">[tx]</a>`);
-    }
+    renderDistributorEvent(d, when, `https://solscan.io/tx/${s.signature}`);
   }
+  sigs.forEach(s => seenSigs.add(s.signature));
   if (seenSigs.size > 400) seenSigs = new Set([...seenSigs].slice(-200));
 }
 
@@ -889,21 +914,26 @@ async function startLive(ca) {
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">mint: ${ca}</span>`);
   const watching = CONFIG.AIRDROP_WALLET.trim() ? " airdrops via Solana RPC." : "";
   const liveNote = '<span class="live-dot"></span>live trades via GeckoTerminal, stats via DexScreener.' + watching + ' everything verifiable on-chain.';
-  // pre-launch: keep the simulated tape rolling and scan until the pool exists
-  $("feed-note").innerHTML = '<span class="live-dot"></span>CA locked in, scanning for launch... simulated tape below until the pool goes live.';
-  startSimulation(true);
-  let live = false, polls = 0;
+  // scan for the pool; only fall back to the simulated tape if it isn't live yet
+  let live = false, polls = 0, simStarted = false;
   const loop = async () => {
     try {
       const ok = await fetchStats(ca);
       if (ok && !live) {
         live = true;
-        stopSimulation();
+        if (simStarted) stopSimulation();
         pushLine(`<span class="ts">${ts()}</span> <span class="sys">pool detected :: switching to LIVE trades</span>`);
         $("feed-note").innerHTML = liveNote;
       }
       if (ok) await fetchTrades();
-      else if (!live && polls % 20 === 0) pushLine(`<span class="ts">${ts()}</span> <span class="sys">scanning for pool... not launched yet</span>`);
+      else if (!live) {
+        if (!simStarted) {
+          simStarted = true;
+          $("feed-note").innerHTML = '<span class="live-dot"></span>CA locked in, scanning for launch... simulated tape below until the pool goes live.';
+          startSimulation(true);
+        }
+        if (polls % 20 === 0) pushLine(`<span class="ts">${ts()}</span> <span class="sys">scanning for pool... not launched yet</span>`);
+      }
     } catch (e) {
       pushLine(`<span class="ts">${ts()}</span> <span class="sys">feed error: ${e.message}, retrying...</span>`);
     }
