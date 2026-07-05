@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>$MESNA | ANSEM, reversed.</title>
 <meta name="description" content="$MESNA is ANSEM spelled backwards. Same terminal, opposite direction.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.mesna.xyz/">
+<meta property="og:title" content="$MESNA | ANSEM, reversed.">
+<meta property="og:description" content="$MESNA is ANSEM spelled backwards. Same terminal, opposite direction.">
+<meta property="og:image" content="https://www.mesna.xyz/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="$MESNA | ANSEM, reversed.">
+<meta name="twitter:description" content="$MESNA is ANSEM spelled backwards. Same terminal, opposite direction.">
+<meta name="twitter:image" content="https://www.mesna.xyz/og.png">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 <style>
   :root {
     --bg: #080a08;
@@ -578,7 +588,7 @@
       <a class="link-card" id="lk-pump" href="https://pump.fun" target="_blank" rel="noopener">pump.fun<span class="arrow">◀ buy</span></a>
       <a class="link-card" id="lk-dex" href="https://dexscreener.com" target="_blank" rel="noopener">dexscreener<span class="arrow">◀ chart</span></a>
       <a class="link-card" id="lk-scan" href="https://solscan.io" target="_blank" rel="noopener">solscan<span class="arrow">◀ verify</span></a>
-      <a class="link-card" id="lk-x" href="https://x.com" target="_blank" rel="noopener">x / twitter<span class="arrow">◀ community</span></a>
+      <a class="link-card" id="lk-x" href="https://x.com/Mesnaonsolana" target="_blank" rel="noopener">x / twitter<span class="arrow">◀ community</span></a>
     </div>
   </div>
 </section>
@@ -599,7 +609,13 @@
   </div>
 </footer>
 
-<script src="config.local.js"></script>
+<script>
+/* dev keys live in config.local.js (gitignored); only exists locally,
+   so skip the request on prod instead of 404ing every page load */
+if (["localhost", "127.0.0.1"].includes(location.hostname) || location.protocol === "file:") {
+  document.write('<script src="config.local.js"><\/script>');
+}
+</script>
 <script>
 /* ================= CONFIG =================
    Paste the token mint address below once launched.
@@ -608,7 +624,7 @@
 const CONFIG = {
   CONTRACT_ADDRESS: "MESNA9Q4CAZEEfuR62DgQsymXK4cCcMmAvKKTc2ZDUh",
   AIRDROP_WALLET: "BULLxAZaHruijDeRGwWcFm5spQmJFy195nxoWPkex93q",
-  X_URL: "",                     // <-- paste X/Twitter community URL here (optional)
+  X_URL: "https://x.com/Mesnaonsolana",
   POLL_MS: 15000,
   // set HELIUS_API_KEY in config.local.js (gitignored) to use Helius RPC;
   // falls back to the public endpoint otherwise
