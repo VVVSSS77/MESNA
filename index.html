@@ -342,9 +342,39 @@
     .buy-btn { margin-left: 0; }
     header { padding: 56px 0 40px; }
   }
+
+  /* ---------- mirror mode: the whole site loads reversed ---------- */
+  body > *:not(#unrev-btn) { transition: transform 0.7s cubic-bezier(.6,-0.3,.3,1.3); }
+  body.rev > *:not(#unrev-btn) { transform: scaleX(-1); }
+  #unrev-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: var(--bg-panel);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 10px 20px;
+    cursor: pointer;
+    box-shadow: 0 0 18px var(--accent-glow), 0 0 40px var(--accent-glow);
+    animation: btn-pulse 1.6s ease-in-out infinite;
+  }
+  #unrev-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    animation: none;
+  }
+  @keyframes btn-pulse {
+    50% { box-shadow: 0 0 4px var(--accent-glow); }
+  }
 </style>
 </head>
-<body>
+<body class="rev">
+
+<button id="unrev-btn" type="button">[ ◀ CAN'T READ? UN-REVERSE ]</button>
 
 <div class="marquee">
   <div class="marquee-inner" id="marquee-text"></div>
@@ -547,6 +577,12 @@ const $ = (id) => document.getElementById(id);
   }
   if (CONFIG.X_URL.trim()) $("lk-x").href = CONFIG.X_URL.trim();
 })();
+
+/* ----- mirror mode toggle ----- */
+$("unrev-btn").addEventListener("click", () => {
+  const on = document.body.classList.toggle("rev");
+  $("unrev-btn").textContent = on ? "[ ◀ CAN'T READ? UN-REVERSE ]" : "[ RE-REVERSE ▶ ]";
+});
 
 $("copy-btn").addEventListener("click", async () => {
   const ca = CONFIG.CONTRACT_ADDRESS.trim();
