@@ -75,7 +75,7 @@ module.exports = async (req, res) => {
       return;
     }
     // newest first, capped
-    res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=120");
+    res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(200).json({ events: events.slice(0, 30) });
   } catch (e) {
