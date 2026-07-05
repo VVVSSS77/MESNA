@@ -866,7 +866,8 @@ function parseDistributorTx(tx) {
 }
 
 function renderDistributorEvent(d, when, link) {
-  const a = (txt) => `<a href="${link}" target="_blank" rel="noopener">[tx]</a>`;
+  // feed shows distributor activity only: fee claims, buybacks, airdrops
+  const a = () => `<a href="${link}" target="_blank" rel="noopener">[tx]</a>`;
   if (d.type === "airdrop") {
     pushLine(
       `<span class="ts">${ts(when)}</span> <span class="drop">AIRDROP</span> ` +
@@ -912,8 +913,7 @@ async function fetchAirdrops() {
 async function startLive(ca) {
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 :: LIVE MODE</span>`);
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">mint: ${ca}</span>`);
-  const watching = CONFIG.AIRDROP_WALLET.trim() ? " airdrops via Solana RPC." : "";
-  const liveNote = '<span class="live-dot"></span>live trades via GeckoTerminal, stats via DexScreener.' + watching + ' everything verifiable on-chain.';
+  const liveNote = '<span class="live-dot"></span>on-chain distributor feed: fee claims, buybacks, airdrops. stats via DexScreener. everything verifiable on Solscan.';
   // scan for the pool; only fall back to the simulated tape if it isn't live yet
   let live = false, polls = 0, simStarted = false;
   const loop = async () => {
@@ -922,11 +922,10 @@ async function startLive(ca) {
       if (ok && !live) {
         live = true;
         if (simStarted) stopSimulation();
-        pushLine(`<span class="ts">${ts()}</span> <span class="sys">pool detected :: switching to LIVE trades</span>`);
+        pushLine(`<span class="ts">${ts()}</span> <span class="sys">pool detected :: distributor feed LIVE</span>`);
         $("feed-note").innerHTML = liveNote;
       }
-      if (ok) await fetchTrades();
-      else if (!live) {
+      if (!ok && !live) {
         if (!simStarted) {
           simStarted = true;
           $("feed-note").innerHTML = '<span class="live-dot"></span>CA locked in, scanning for launch... simulated tape below until the pool goes live.';
