@@ -147,6 +147,51 @@
   body.rev .hero-word.flip span:nth-child(2) { transform: translateX(calc((1ch + 0.04em) *  2)) scaleX(-1); }
   body.rev .hero-word.flip span:nth-child(4) { transform: translateX(calc((1ch + 0.04em) * -2)) scaleX(-1); }
   body.rev .hero-word.flip span:nth-child(5) { transform: translateX(calc((1ch + 0.04em) * -4)) scaleX(-1); }
+  /* flowing glow frame around the logo */
+  @property --angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  .hero-frame {
+    position: relative;
+    display: inline-block;
+    padding: 26px 46px;
+  }
+  .hero-frame::before,
+  .hero-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    padding: 2px;
+    background: conic-gradient(from var(--angle),
+      rgba(51, 255, 51, 0.10) 0deg 280deg,
+      var(--accent) 320deg,
+      #eaffea 340deg,
+      var(--accent) 350deg,
+      rgba(51, 255, 51, 0.10) 360deg);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: border-flow 3.5s linear infinite;
+  }
+  .hero-frame::after { filter: blur(12px); }
+  @keyframes border-flow { to { --angle: 360deg; } }
+
+  /* parallax background layer */
+  #bg-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .bg-item {
+    position: absolute;
+    color: var(--accent);
+    user-select: none;
+    white-space: nowrap;
+  }
+
   .hero-sub { margin-top: 18px; color: var(--text-dim); font-size: 15px; }
   .hero-sub b { color: var(--text); font-weight: normal; }
   .hero-eq {
@@ -387,6 +432,8 @@
 
 <button id="unrev-btn" type="button">[ ◀ CAN'T READ? UN-REVERSE ]</button>
 
+<div id="bg-layer"></div>
+
 <div class="marquee">
   <div class="marquee-inner" id="marquee-text"></div>
 </div>
@@ -404,8 +451,10 @@
 </nav>
 
 <header class="wrap">
-  <div class="hero-word" title="hover me">
-    <span>M</span><span>E</span><span>S</span><span>N</span><span>A</span>
+  <div class="hero-frame">
+    <div class="hero-word" title="hover me">
+      <span>M</span><span>E</span><span>S</span><span>N</span><span>A</span>
+    </div>
   </div>
   <div class="hero-sub">
     <b>ANSEM</b>, spelled backwards. Hold <b>$ANSEM</b>, get airdropped <b>$MESNA</b>.<span class="cursor"></span>
@@ -594,6 +643,36 @@ const $ = (id) => document.getElementById(id);
   const hero = document.querySelector(".hero-word");
   hero.addEventListener("pointerenter", () => hero.classList.add("flip"));
   hero.addEventListener("pointerleave", () => hero.classList.remove("flip"));
+})();
+
+/* ----- parallax: floating background glyphs + hero depth ----- */
+(() => {
+  const layer = $("bg-layer");
+  const GLYPHS = ["◀", "$MESNA", "◀", "ANSEM", "√", "◀", "$MESNA", "◀", "ANSEM", "◀", "$MESNA", "◀"];
+  const items = GLYPHS.map((g, i) => {
+    const el = document.createElement("span");
+    el.className = "bg-item";
+    el.textContent = g;
+    const depth = 0.08 + (i % 4) * 0.09;
+    el.style.left = ((i * 83) % 95) + "%";
+    el.style.top = ((i * 47) % 130) + "%";
+    el.style.fontSize = Math.round(14 + depth * 90) + "px";
+    el.style.opacity = (0.04 + depth * 0.16).toFixed(3);
+    layer.appendChild(el);
+    return { el, depth };
+  });
+  const heroBits = [
+    { el: document.querySelector(".hero-frame"), depth: 0.30 },
+    { el: document.querySelector(".hero-sub"), depth: 0.20 },
+    { el: document.querySelector(".hero-eq"), depth: 0.12 }
+  ].filter(b => b.el);
+  const apply = () => {
+    const y = window.scrollY;
+    for (const it of items) it.el.style.transform = `translateY(${(-y * it.depth).toFixed(1)}px)`;
+    for (const b of heroBits) b.el.style.transform = `translateY(${(y * b.depth).toFixed(1)}px)`;
+  };
+  window.addEventListener("scroll", apply, { passive: true });
+  apply();
 })();
 
 /* ----- mirror mode toggle ----- */
