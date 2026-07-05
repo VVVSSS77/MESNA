@@ -888,24 +888,30 @@ function renderDistributorEvent(d, when, link) {
   }
 }
 
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
 async function fetchAirdrops() {
   const wallet = CONFIG.AIRDROP_WALLET.trim();
   if (!wallet) return;
-  const sigs = await rpc("getSignaturesForAddress", [wallet, { limit: 15 }]) || [];
+  const deepReplay = firstAirdropPoll;
+  const sigs = await rpc("getSignaturesForAddress", [wallet, { limit: deepReplay ? 50 : 15 }]) || [];
   const fresh = sigs.filter(s => !seenSigs.has(s.signature) && !s.err);
   if (firstAirdropPoll && sigs.length) {
     firstAirdropPoll = false;
-    pushLine(`<span class="ts">${ts()}</span> <span class="sys">watcher armed on ${wallet.slice(0, 4)}...${wallet.slice(-4)} :: replaying recent activity</span>`);
+    pushLine(`<span class="ts">${ts()}</span> <span class="sys">watcher armed on ${wallet.slice(0, 4)}...${wallet.slice(-4)} :: replaying history</span>`);
   }
-  // newest-first from RPC; show up to 8 per poll, oldest first
-  for (const s of fresh.slice(0, 8).reverse()) {
+  // walk newest-first collecting events up to the cap, then render oldest-first
+  const cap = deepReplay ? 20 : 8;
+  const events = [];
+  for (const s of fresh) {
+    if (events.length >= cap) break;
     seenSigs.add(s.signature);
     const tx = await rpc("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
     const d = parseDistributorTx(tx);
-    if (!d) continue;
-    const when = s.blockTime ? new Date(s.blockTime * 1000) : new Date();
-    renderDistributorEvent(d, when, `https://solscan.io/tx/${s.signature}`);
+    if (d) events.push({ d, when: s.blockTime ? new Date(s.blockTime * 1000) : new Date(), link: `https://solscan.io/tx/${s.signature}` });
+    await sleep(120); // stay under public-RPC rate limits
   }
+  for (const e of events.reverse()) renderDistributorEvent(e.d, e.when, e.link);
   sigs.forEach(s => seenSigs.add(s.signature));
   if (seenSigs.size > 400) seenSigs = new Set([...seenSigs].slice(-200));
 }
