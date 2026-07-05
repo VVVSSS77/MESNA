@@ -891,6 +891,31 @@ function renderDistributorEvent(d, when, link) {
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 async function fetchAirdrops() {
+  // fast path: server-side cached feed (/api/feed on Vercel) — instant,
+  // identical for every visitor, Helius key stays server-side
+  try {
+    const res = await fetch("/api/feed", { signal: AbortSignal.timeout(8000) });
+    if (res.ok) {
+      const { events } = await res.json();
+      if (Array.isArray(events)) {
+        if (firstAirdropPoll && events.length) {
+          firstAirdropPoll = false;
+          pushLine(`<span class="ts">${ts()}</span> <span class="sys">watcher armed :: distributor history loaded</span>`);
+        }
+        const fresh = events.filter(e => e.sig && !seenSigs.has(e.sig));
+        for (const e of fresh.reverse()) {
+          seenSigs.add(e.sig);
+          renderDistributorEvent(e, e.t ? new Date(e.t * 1000) : new Date(), `https://solscan.io/tx/${e.sig}`);
+        }
+        if (seenSigs.size > 400) seenSigs = new Set([...seenSigs].slice(-200));
+        return;
+      }
+    }
+  } catch { /* fall through to direct RPC walk */ }
+  await fetchAirdropsDirect();
+}
+
+async function fetchAirdropsDirect() {
   const wallet = CONFIG.AIRDROP_WALLET.trim();
   if (!wallet) return;
   const deepReplay = firstAirdropPoll;
