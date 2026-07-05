@@ -606,8 +606,8 @@
    Everything else (links, stats, live trades) wires
    itself up automatically. */
 const CONFIG = {
-  CONTRACT_ADDRESS: "",          // <-- paste MESNA mint address here
-  AIRDROP_WALLET: "",            // <-- paste distributor wallet here to stream real airdrops
+  CONTRACT_ADDRESS: "MESNA9Q4CAZEEfuR62DgQsymXK4cCcMmAvKKTc2ZDUh",
+  AIRDROP_WALLET: "ANSEMPCHLecH4XgapkUHSVTJN4WdtwYu1Y5TNnEUjugx",
   X_URL: "",                     // <-- paste X/Twitter community URL here (optional)
   POLL_MS: 15000,
   // set HELIUS_API_KEY in config.local.js (gitignored) to use Helius RPC;
@@ -721,9 +721,14 @@ function ts(d) {
 
 /* ----- simulation mode (until CA is set) ----- */
 let simTimer = null;
-function startSimulation() {
-  pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 :: SIMULATION MODE</span>`);
-  pushLine(`<span class="ts">${ts()}</span> <span class="sys">waiting for mint address... replaying imaginary tape in reverse</span>`);
+function stopSimulation() {
+  if (simTimer) { clearTimeout(simTimer); simTimer = null; }
+}
+function startSimulation(quiet) {
+  if (!quiet) {
+    pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 :: SIMULATION MODE</span>`);
+    pushLine(`<span class="ts">${ts()}</span> <span class="sys">waiting for mint address... replaying imaginary tape in reverse</span>`);
+  }
   const wallets = ["7xKX...m2Vp", "3nFa...9dQz", "Bk2e...xR4t", "9mWq...L7cs", "Fh5u...pT2n", "2vGy...kM8b", "6sDr...wN3j"];
   const tick = () => {
     const r = Math.random();
@@ -862,15 +867,26 @@ async function startLive(ca) {
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 :: LIVE MODE</span>`);
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">mint: ${ca}</span>`);
   const watching = CONFIG.AIRDROP_WALLET.trim() ? " airdrops via Solana RPC." : "";
-  $("feed-note").innerHTML = '<span class="live-dot"></span>live trades via GeckoTerminal, stats via DexScreener.' + watching + ' everything verifiable on-chain.';
+  const liveNote = '<span class="live-dot"></span>live trades via GeckoTerminal, stats via DexScreener.' + watching + ' everything verifiable on-chain.';
+  // pre-launch: keep the simulated tape rolling and scan until the pool exists
+  $("feed-note").innerHTML = '<span class="live-dot"></span>CA locked in, scanning for launch... simulated tape below until the pool goes live.';
+  startSimulation(true);
+  let live = false, polls = 0;
   const loop = async () => {
     try {
       const ok = await fetchStats(ca);
+      if (ok && !live) {
+        live = true;
+        stopSimulation();
+        pushLine(`<span class="ts">${ts()}</span> <span class="sys">pool detected :: switching to LIVE trades</span>`);
+        $("feed-note").innerHTML = liveNote;
+      }
       if (ok) await fetchTrades();
-      else pushLine(`<span class="ts">${ts()}</span> <span class="sys">no pool found yet, retrying...</span>`);
+      else if (!live && polls % 20 === 0) pushLine(`<span class="ts">${ts()}</span> <span class="sys">scanning for pool... not launched yet</span>`);
     } catch (e) {
       pushLine(`<span class="ts">${ts()}</span> <span class="sys">feed error: ${e.message}, retrying...</span>`);
     }
+    polls++;
     setTimeout(loop, CONFIG.POLL_MS);
   };
   loop();
