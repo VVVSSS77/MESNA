@@ -209,6 +209,7 @@
   .feed-line .buy { color: var(--green); }
   .feed-line .sell { color: var(--red); }
   .feed-line .sys { color: var(--accent-dim); }
+  .feed-line .drop { color: var(--accent); }
   .feed-note { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
   .live-dot {
     display: inline-block;
@@ -387,7 +388,7 @@
       <div class="stat"><div class="label">24h Volume</div><div class="value" id="st-vol">...</div></div>
     </div>
     <div class="feed" id="feed-box"></div>
-    <div class="feed-note" id="feed-note"><span class="live-dot"></span>awaiting contract address: feed running in simulation mode. real trades stream in automatically once CA is set.</div>
+    <div class="feed-note" id="feed-note"><span class="live-dot"></span>awaiting contract address: feed running in simulation mode. real trades + airdrops stream in automatically once CA and distributor wallet are set.</div>
   </div>
 </section>
 
@@ -514,8 +515,10 @@
    itself up automatically. */
 const CONFIG = {
   CONTRACT_ADDRESS: "",          // <-- paste MESNA mint address here
+  AIRDROP_WALLET: "",            // <-- paste distributor wallet here to stream real airdrops
   X_URL: "",                     // <-- paste X/Twitter community URL here (optional)
-  POLL_MS: 15000
+  POLL_MS: 15000,
+  RPC_URL: "https://api.mainnet-beta.solana.com"
 };
 /* ========================================== */
 
@@ -584,11 +587,19 @@ function startSimulation() {
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">waiting for mint address... replaying imaginary tape in reverse</span>`);
   const wallets = ["7xKX...m2Vp", "3nFa...9dQz", "Bk2e...xR4t", "9mWq...L7cs", "Fh5u...pT2n", "2vGy...kM8b", "6sDr...wN3j"];
   const tick = () => {
-    const buy = Math.random() < 0.72;
+    const r = Math.random();
     const w = wallets[Math.floor(Math.random() * wallets.length)];
     const sol = (Math.random() * 4 + 0.05).toFixed(2);
-    if (buy) pushLine(`<span class="ts">${ts()}</span> <span class="buy">BUY </span> ${w} <span class="buy">+${sol} SOL</span> <span class="sys">// simulated</span>`);
-    else     pushLine(`<span class="ts">${ts()}</span> <span class="sell">SELL</span> ${w} <span class="sell">-${sol} SOL</span> <span class="sys">// simulated</span>`);
+    if (r < 0.14) {
+      pushLine(`<span class="ts">${ts()}</span> <span class="drop">BUYBACK</span> fees claimed, bought <span class="drop">+${(Math.random() * 3 + 0.5).toFixed(2)} SOL</span> of $MESNA <span class="sys">// simulated</span>`);
+    } else if (r < 0.34) {
+      const amt = Math.floor(Math.random() * 90000 + 5000).toLocaleString("en-US");
+      pushLine(`<span class="ts">${ts()}</span> <span class="drop">AIRDROP</span> ${w} <span class="drop">+${amt} MESNA</span> ($ANSEM holder) <span class="sys">// simulated</span>`);
+    } else if (r < 0.8) {
+      pushLine(`<span class="ts">${ts()}</span> <span class="buy">BUY </span> ${w} <span class="buy">+${sol} SOL</span> <span class="sys">// simulated</span>`);
+    } else {
+      pushLine(`<span class="ts">${ts()}</span> <span class="sell">SELL</span> ${w} <span class="sell">-${sol} SOL</span> <span class="sys">// simulated</span>`);
+    }
     simTimer = setTimeout(tick, 1200 + Math.random() * 3500);
   };
   tick();
@@ -644,10 +655,75 @@ async function fetchTrades() {
   if (seenTrades.size > 400) seenTrades = new Set([...seenTrades].slice(-200));
 }
 
+/* ----- live airdrops: watch the distributor wallet via Solana RPC ----- */
+let seenSigs = new Set();
+let firstAirdropPoll = true;
+
+async function rpc(method, params) {
+  const res = await fetch(CONFIG.RPC_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params })
+  });
+  return (await res.json()).result;
+}
+
+function parseAirdrop(tx) {
+  // sum outgoing MESNA transfers + count recipients in one distribution tx
+  if (!tx || !tx.meta) return null;
+  const instrs = [];
+  for (const ix of tx.transaction.message.instructions || []) instrs.push(ix);
+  for (const inner of tx.meta.innerInstructions || []) instrs.push(...inner.instructions);
+  let total = 0, recipients = 0;
+  for (const ix of instrs) {
+    const p = ix.parsed;
+    if (!p || (p.type !== "transfer" && p.type !== "transferChecked")) continue;
+    if (p.info.mint && p.info.mint !== CONFIG.CONTRACT_ADDRESS.trim()) continue;
+    const amt = p.info.tokenAmount ? p.info.tokenAmount.uiAmount
+              : (p.info.amount ? Number(p.info.amount) / 1e6 : 0);
+    if (amt > 0) { total += amt; recipients++; }
+  }
+  if (!recipients) return null;
+  return { total, recipients };
+}
+
+async function fetchAirdrops() {
+  const wallet = CONFIG.AIRDROP_WALLET.trim();
+  if (!wallet) return;
+  const sigs = await rpc("getSignaturesForAddress", [wallet, { limit: 8 }]) || [];
+  const fresh = sigs.filter(s => !seenSigs.has(s.signature) && !s.err);
+  // on first poll just mark history as seen so we only stream new drops
+  if (firstAirdropPoll) {
+    firstAirdropPoll = false;
+    sigs.forEach(s => seenSigs.add(s.signature));
+    if (sigs.length) pushLine(`<span class="ts">${ts()}</span> <span class="sys">airdrop watcher armed on ${wallet.slice(0, 4)}...${wallet.slice(-4)}</span>`);
+    return;
+  }
+  for (const s of fresh.reverse().slice(0, 4)) {
+    seenSigs.add(s.signature);
+    const tx = await rpc("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
+    const drop = parseAirdrop(tx);
+    const when = s.blockTime ? new Date(s.blockTime * 1000) : new Date();
+    const link = `https://solscan.io/tx/${s.signature}`;
+    if (drop) {
+      pushLine(
+        `<span class="ts">${ts(when)}</span> <span class="drop">AIRDROP</span> ` +
+        `${drop.recipients} wallet${drop.recipients > 1 ? "s" : ""} ` +
+        `<span class="drop">+${Math.round(drop.total).toLocaleString("en-US")} MESNA</span> ` +
+        `<a href="${link}" target="_blank" rel="noopener">[tx]</a>`
+      );
+    } else {
+      pushLine(`<span class="ts">${ts(when)}</span> <span class="sys">distributor tx</span> <a href="${link}" target="_blank" rel="noopener">[tx]</a>`);
+    }
+  }
+  if (seenSigs.size > 400) seenSigs = new Set([...seenSigs].slice(-200));
+}
+
 async function startLive(ca) {
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">boot: mesna-feed v0.1 :: LIVE MODE</span>`);
   pushLine(`<span class="ts">${ts()}</span> <span class="sys">mint: ${ca}</span>`);
-  $("feed-note").innerHTML = '<span class="live-dot"></span>live trades via GeckoTerminal, stats via DexScreener. everything verifiable on-chain.';
+  const watching = CONFIG.AIRDROP_WALLET.trim() ? " airdrops via Solana RPC." : "";
+  $("feed-note").innerHTML = '<span class="live-dot"></span>live trades via GeckoTerminal, stats via DexScreener.' + watching + ' everything verifiable on-chain.';
   const loop = async () => {
     try {
       const ok = await fetchStats(ca);
@@ -659,6 +735,11 @@ async function startLive(ca) {
     setTimeout(loop, CONFIG.POLL_MS);
   };
   loop();
+  const dropLoop = async () => {
+    try { await fetchAirdrops(); } catch (e) { /* RPC hiccup, retry next round */ }
+    setTimeout(dropLoop, CONFIG.POLL_MS * 2);
+  };
+  dropLoop();
 }
 
 /* ----- boot ----- */
