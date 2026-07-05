@@ -832,7 +832,9 @@ async function rpc(method, params) {
 }
 
 function parseAirdrop(tx) {
-  // sum outgoing MESNA transfers + count recipients in one distribution tx
+  // count only outgoing MESNA: transferChecked of the MESNA mint signed by the
+  // distributor wallet. Anything else in the tx (buyback swap legs, wSOL moves)
+  // must not show up as an airdrop.
   if (!tx || !tx.meta) return null;
   const instrs = [];
   for (const ix of tx.transaction.message.instructions || []) instrs.push(ix);
@@ -840,10 +842,10 @@ function parseAirdrop(tx) {
   let total = 0, recipients = 0;
   for (const ix of instrs) {
     const p = ix.parsed;
-    if (!p || (p.type !== "transfer" && p.type !== "transferChecked")) continue;
-    if (p.info.mint && p.info.mint !== CONFIG.CONTRACT_ADDRESS.trim()) continue;
-    const amt = p.info.tokenAmount ? p.info.tokenAmount.uiAmount
-              : (p.info.amount ? Number(p.info.amount) / 1e6 : 0);
+    if (!p || p.type !== "transferChecked") continue;
+    if (p.info.mint !== CONFIG.CONTRACT_ADDRESS.trim()) continue;
+    if (p.info.authority !== CONFIG.AIRDROP_WALLET.trim()) continue;
+    const amt = p.info.tokenAmount ? p.info.tokenAmount.uiAmount : 0;
     if (amt > 0) { total += amt; recipients++; }
   }
   if (!recipients) return null;
