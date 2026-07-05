@@ -508,6 +508,7 @@
   </div>
 </footer>
 
+<script src="config.local.js"></script>
 <script>
 /* ================= CONFIG =================
    Paste the token mint address below once launched.
@@ -518,7 +519,11 @@ const CONFIG = {
   AIRDROP_WALLET: "",            // <-- paste distributor wallet here to stream real airdrops
   X_URL: "",                     // <-- paste X/Twitter community URL here (optional)
   POLL_MS: 15000,
-  RPC_URL: "https://api.mainnet-beta.solana.com"
+  // set HELIUS_API_KEY in config.local.js (gitignored) to use Helius RPC;
+  // falls back to the public endpoint otherwise
+  RPC_URL: (window.MESNA_KEYS && window.MESNA_KEYS.HELIUS_API_KEY)
+    ? "https://mainnet.helius-rpc.com/?api-key=" + window.MESNA_KEYS.HELIUS_API_KEY
+    : "https://api.mainnet-beta.solana.com"
 };
 /* ========================================== */
 
