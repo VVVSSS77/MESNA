@@ -49,9 +49,31 @@ function parseTx(tx) {
   return null;
 }
 
+// Primary source: the bot's own feed server on the VPS. It already knows every
+// claim/buyback/airdrop it performed, so this is instant and authoritative.
+// server-to-server fetch (no mixed-content); RPC scan below is the fallback.
+const BOT_FEED_URL = process.env.BOT_FEED_URL || "http://66.29.139.146:8080/feed.json";
+
+async function fromBot() {
+  const r = await fetch(BOT_FEED_URL, { signal: AbortSignal.timeout(5000) });
+  if (!r.ok) throw new Error("bot feed " + r.status);
+  const j = await r.json();
+  if (!Array.isArray(j.events)) throw new Error("bot feed shape");
+  return j.events;
+}
+
 module.exports = async (req, res) => {
+  // fast path: bot feed server
   try {
-    const sigs = ((await rpc("getSignaturesForAddress", [WALLET, { limit: 50 }])) || [])
+    const events = await fromBot();
+    res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=300");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(200).json({ events, source: "bot" });
+    return;
+  } catch { /* fall through to on-chain scan */ }
+
+  try {
+    const sigs = ((await rpc("getSignaturesForAddress", [WALLET, { limit: 120 }])) || [])
       .filter(s => !s.err);
     const events = [];
     let failed = 0;
@@ -77,7 +99,7 @@ module.exports = async (req, res) => {
     // newest first, capped
     res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.status(200).json({ events: events.slice(0, 30) });
+    res.status(200).json({ events: events.slice(0, 40), source: "rpc" });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
